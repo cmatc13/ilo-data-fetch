@@ -67,6 +67,15 @@ def download_eplex_data(theme_value, file_name):
         # Close the webdriver
         driver.quit()
 
+def upload_to_gcs(bucket_name, source_file_name, destination_blob_name):
+    """Uploads a file to the bucket."""
+    storage_client = storage.Client.from_service_account_json('path/to/service/account/key.json')
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(destination_blob_name)
+    blob.upload_from_filename(source_file_name)
+
+    print(f"File {source_file_name} uploaded to {destination_blob_name}.")
+
 # Dictionary of theme values to filenames
 theme_files = {
     "EMPCONTRACT1": "Fixed_Term_Contracts_FTCs.csv",
@@ -86,20 +95,4 @@ theme_files = {
 for theme, filename in theme_files.items():
     file_path = download_eplex_data(theme, filename)
     upload_to_gcs("your-bucket-name", file_path, filename)
-
-
-
-def upload_to_gcs(bucket_name, source_file_name, destination_blob_name):
-    """Uploads a file to the bucket."""
-    storage_client = storage.Client.from_service_account_json('path/to/service/account/key.json')
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(destination_blob_name)
-    blob.upload_from_filename(source_file_name)
-
-    print(f"File {source_file_name} uploaded to {destination_blob_name}.")
-
-upload_to_gcs(bucket_name, source_file_name = Fixed_Term_Contracts_FTCs.csv, destination_blob_name)
-
-
-
 
