@@ -1,9 +1,14 @@
 import os
 import time
+import sys
+sys.path.append(os.path.abspath('.'))
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait, Select
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.support.ui import WebDriverWait, Select
 from google.cloud import storage
 
 def download_eplex_data(theme_value, file_name):
@@ -13,8 +18,9 @@ def download_eplex_data(theme_value, file_name):
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--headless")
     chrome_options.add_argument('--disable-dev-shm-usage')
-
+    
     driver = webdriver.Chrome(options=chrome_options)
+
 
     # URL of the website
     url = "https://eplex.ilo.org/"
@@ -69,7 +75,7 @@ def download_eplex_data(theme_value, file_name):
 
 def upload_to_gcs(bucket_name, source_file_name, destination_blob_name):
     """Uploads a file to the bucket."""
-    storage_client = storage.Client.from_service_account_json('path/to/service/account/key.json')
+    storage_client = storage.Client.from_service_account_json('/app/rare-daylight-418614-e1907d935d97.json')
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(destination_blob_name)
     blob.upload_from_filename(source_file_name)
@@ -93,6 +99,11 @@ theme_files = {
 
 # Iterate through the dictionary items
 for theme, filename in theme_files.items():
-    file_path = download_eplex_data(theme, filename)
-    upload_to_gcs("your-bucket-name", file_path, filename)
+    download_eplex_data(theme, filename)
+    #upload_to_gcs("ilo_data_storage", file_path, filename)
 
+
+# Iterate through the dictionary items
+for theme, filename in theme_files.items():
+    #file_path = download_eplex_data(theme, filename)
+    upload_to_gcs("ilo_data_storage", filename, filename)
