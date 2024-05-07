@@ -222,32 +222,77 @@ data10 = loader10.load()
  
 data = data1 + data2 + data3 + data4 + data5 + data6 + data7 + data8 + data9 + data10
 
-# Initialize a client
-storage_client = storage.Client.from_service_account_json('/app/rare-daylight-418614-e1907d935d97.json')
 
-# Specify your GCS bucket name
+import json
+
+def serialize_documents(documents):
+    """Serializes a list of langchain_core Document objects to a single JSON string.
+    
+    Args:
+        documents (list): A list of Document instances that have a .to_json() method.
+        
+    Returns:
+        str: A JSON string representing the list of serialized documents.
+    """
+    serialized_docs = [doc.to_json() if isinstance(doc.to_json(), dict) else json.loads(doc.to_json()) for doc in documents]
+    return json.dumps(serialized_docs)
+
+data_ser = serialize_documents(data)
+
+
+
+def upload_blob(bucket_name, data_string, destination_blob_name):
+    """Uploads data to the bucket as a file."""
+    storage_client = storage.Client.from_service_account_json('app/rare-daylight-418614-e1907d935d97.json')
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(destination_blob_name)
+    
+    # Upload the JSON string
+    blob.upload_from_string(data_string, content_type='application/json')
+
+
+# Upload the JSON data to GCS
+upload_blob("ilo_data_storage", data_ser, "embeddings.json")
+
+
+
+
+
+import inspect
+import chromadb
+from typing import List, Optional, Type, Any
+from langchain_community.vectorstores import FAISS, Chroma
+import os
+from langchain_openai import OpenAIEmbeddings
+embeddings = OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY"))
+#embeddings = OpenAIEmbeddings()
+vectorstore = Chroma.from_documents(documents=documents, embedding=embeddings, persist_directory='/chroma')
+
+
+
+def upload_dir_to_gcs(bucket_name, source_folder, destination_blob_folder):
+    """Uploads a directory to the GCS bucket."""
+    #storage_client = storage.Client()
+    storage_client = storage.Client.from_service_account_json('app/rare-daylight-418614-e1907d935d97.json')
+    bucket = storage_client.bucket(bucket_name)
+    
+    for local_file in os.listdir(source_folder):
+        local_path = os.path.join(source_folder, local_file)
+        if os.path.isfile(local_path):
+            remote_path = os.path.join(destination_blob_folder, local_file)
+            blob = bucket.blob(remote_path)
+            blob.upload_from_filename(local_path)
+            print(f"{local_path} uploaded to {remote_path}.")
+        elif os.path.isdir(local_path):
+            # Recursively upload directories
+            upload_dir_to_gcs(bucket_name, local_path, os.path.join(destination_blob_folder, local_file))
+
+# Use the function to upload the ChromaDB persistence directory to GCS
 bucket_name = "ilo_data_storage"
+local_persistence_dir = '/chroma'  # Your local directory
+gcs_persistence_dir = 'chroma_persistence'  # Path in your GCS bucket
 
-# Specify the file name in the bucket
-blob_name = 'embeddings.txt'
-
-# Convert list to a string with each item separated by a newline character
-list_string = '\n'.join(data)
-
-# Create a bucket object
-bucket = storage_client.bucket(bucket_name)
-
-# Create a blob object
-blob = bucket.blob(blob_name)
-
-# Upload the string as the content of the blob
-blob.upload_from_string(list_string)
-
-print(f'List uploaded to gs://{bucket_name}/{blob_name}')
+upload_dir_to_gcs(bucket_name, local_persistence_dir, gcs_persistence_dir)
 
 
 
-# Iterate through the dictionary items
-for theme, filename in theme_files.items():
-    #file_path = download_eplex_data(theme, filename)
-    upload_to_gcs("ilo_data_storage", filename, filename)
