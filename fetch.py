@@ -294,32 +294,46 @@ import os
 from langchain_openai import OpenAIEmbeddings
 embeddings = OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY"))
 #embeddings = OpenAIEmbeddings()
-vectorstore = Chroma.from_documents(documents=data, embedding=embeddings, persist_directory='.')
+vectorstore = Chroma.from_documents(documents=data, embedding=embeddings, persist_directory='chroma')
 
 
+
+import os
+from google.cloud import storage
 
 def upload_dir_to_gcs(bucket_name, source_folder, destination_blob_folder):
-    """Uploads a directory to the GCS bucket."""
-    #storage_client = storage.Client()
+    """Uploads a directory to the GCS bucket, including handling for symbolic links to avoid infinite recursion.
+    
+    Args:
+        bucket_name (str): Name of the Google Cloud Storage bucket.
+        source_folder (str): Local path to the directory to be uploaded.
+        destination_blob_folder (str): Path in the GCS bucket where the directory and files will be uploaded.
+    """
+    # Initialize Google Cloud Storage client
     storage_client = storage.Client.from_service_account_json('app/rare-daylight-418614-e1907d935d97.json')
     bucket = storage_client.bucket(bucket_name)
     
-    for local_file in os.listdir(source_folder):
-        local_path = os.path.join(source_folder, local_file)
-        if os.path.isfile(local_path):
-            remote_path = os.path.join(destination_blob_folder, local_file)
+    # Walk through the directory tree
+    for root, dirs, files in os.walk(source_folder):
+        # Exclude symbolic links that resolve to directories
+        dirs[:] = [d for d in dirs if not os.path.islink(os.path.join(root, d))]
+        for file_name in files:
+            local_path = os.path.join(root, file_name)
+            # Check if the path is a symbolic link and skip it
+            if os.path.islink(local_path):
+                print(f"Skipping symbolic link at {local_path}")
+                continue
+            # Construct the full path for the file in GCS
+            relative_path = os.path.relpath(local_path, source_folder)
+            remote_path = os.path.join(destination_blob_folder, relative_path)
             blob = bucket.blob(remote_path)
             blob.upload_from_filename(local_path)
             print(f"{local_path} uploaded to {remote_path}.")
-        elif os.path.isdir(local_path):
-            # Recursively upload directories
-            upload_dir_to_gcs(bucket_name, local_path, os.path.join(destination_blob_folder, local_file))
 
-# Use the function to upload the ChromaDB persistence directory to GCS
+# Example usage
 bucket_name = "ilo_data_storage"
 local_persistence_dir = 'chroma'  # Your local directory
 gcs_persistence_dir = 'chroma_persistence'  # Path in your GCS bucket
-
 upload_dir_to_gcs(bucket_name, local_persistence_dir, gcs_persistence_dir)
 
 
