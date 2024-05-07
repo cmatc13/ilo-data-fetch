@@ -10,6 +10,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from google.cloud import storage
+from langchain.document_loaders.base import BaseLoader
 
 def download_eplex_data(theme_value, file_name):
 
@@ -98,8 +99,8 @@ theme_files = {
 }
 
 # Iterate through the dictionary items
-for theme, filename in theme_files.items():
-    download_eplex_data(theme, filename)
+#for theme, filename in theme_files.items():
+#    download_eplex_data(theme, filename)
     #upload_to_gcs("ilo_data_storage", file_path, filename)
 
 
