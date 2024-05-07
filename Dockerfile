@@ -21,6 +21,7 @@ WORKDIR /app
 COPY requirements.txt ./
 COPY fetch.py ./
 COPY rare-daylight-418614-e1907d935d97.json ./
+COPY google-cloud-sdk ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Google Chrome
