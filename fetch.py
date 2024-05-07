@@ -126,8 +126,8 @@ theme_files = {
 }
 
 # Iterate through the dictionary items
-#for theme, filename in theme_files.items():
-#    download_eplex_data(theme, filename)
+for theme, filename in theme_files.items():
+    download_eplex_data(theme, filename)
     #upload_to_gcs("ilo_data_storage", file_path, filename)
 
 
@@ -271,7 +271,7 @@ data_ser = serialize_documents(data)
 
 def upload_blob(bucket_name, data_string, destination_blob_name):
     """Uploads data to the bucket as a file."""
-    storage_client = storage.Client.from_service_account_json('app/rare-daylight-418614-e1907d935d97.json')
+    storage_client = storage.Client.from_service_account_json('rare-daylight-418614-e1907d935d97.json')
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(destination_blob_name)
     
@@ -310,7 +310,7 @@ def upload_dir_to_gcs(bucket_name, source_folder, destination_blob_folder):
         destination_blob_folder (str): Path in the GCS bucket where the directory and files will be uploaded.
     """
     # Initialize Google Cloud Storage client
-    storage_client = storage.Client.from_service_account_json('app/rare-daylight-418614-e1907d935d97.json')
+    storage_client = storage.Client.from_service_account_json('rare-daylight-418614-e1907d935d97.json')
     bucket = storage_client.bucket(bucket_name)
     
     # Walk through the directory tree

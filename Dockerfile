@@ -10,6 +10,9 @@ RUN apt-get update && \
     apt-get install -y wget unzip jq curl libglib2.0-0 libnss3 libnspr4 libxss1 libx11-xcb1 xdg-utils
 
 
+RUN curl -LO https://github.com/tonymet/gcloud-lite/releases/download/472.0.0/google-cloud-cli-472.0.0-linux-x86_64-lite.tar.gz
+RUN tar -zxf *gz
+
 # Create a virtual environment and activate it
 RUN python -m venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
@@ -22,6 +25,8 @@ COPY requirements.txt ./
 COPY fetch.py ./
 COPY rare-daylight-418614-e1907d935d97.json ./
 COPY google-cloud-sdk ./
+COPY chroma ./chroma/
+COPY google-cloud-cli-472.0.0-linux-x86_64-lite.tar.gz ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Google Chrome
@@ -48,7 +53,11 @@ FROM python:3.11-slim-buster as runtime
 COPY --from=builder /opt /opt
 #COPY --from=builder /root/.local /root/.local
 COPY --from=builder /app /app
-#COPY .env /app
+COPY .env /app
+
+RUN ls app
+RUN ls 
+RUN chmod 755 app/chroma
 
 
 # Install system dependencies required for Chrome and Chromedriver
@@ -82,6 +91,8 @@ RUN apt-get update && apt-get install -y \
 # Set up environment variables for the virtual environment
 ENV VIRTUAL_ENV="/app/.venv"
 ENV PATH="$VIRTUAL_ENV/bin:/opt/chromedriver/chromedriver-linux64:/opt/chrome/chrome-linux64:$PATH"
+#ENV PATH="$VIRTUAL_ENV/bin:/opt/chromedriver/chromedriver-linux64:/opt/chrome/chrome-linux64:/root/.local/bin:$PATH"
+
 
 # Set the working directory
 WORKDIR /app
