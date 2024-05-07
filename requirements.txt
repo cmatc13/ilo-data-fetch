@@ -20,3 +20,5 @@ langchain_experimental == 0.0.57
 chromedriver-py == 124.0.6367.91
 python-dotenv == 1.0.1
 google-cloud-storage == 2.16.0
+fastapi == 0.110.3
+uvicorn == 0.25.0

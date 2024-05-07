@@ -65,6 +65,10 @@ gcloud projects add-iam-policy-binding [YOUR_PROJECT_ID] \
 gcloud artifacts locations list
 # Generate Docker with Region
 DOCKER_BUILDKIT=1 docker build --target=runtime . -t europe-west6-docker.pkg.dev/[YOUR_PROJECT_ID]/clapp/[YOUR_DOCKER_IMAGE]:latest
+
+
+DOCKER_BUILDKIT=1 docker build --target=runtime . -t europe-west6-docker.pkg.dev/[YOUR_PROJECT_ID]/clapp/[YOUR_DOCKER_IMAGE]:latest
+
 # Push Docker to Artifacts Registry
 # Create a repository clapp
 gcloud artifacts repositories create clapp \
@@ -72,12 +76,17 @@ gcloud artifacts repositories create clapp \
     --location=europe-west6 \
     --description="A Langachain Chainlit App" \
     --async
+
+
 # Assign authuntication
 gcloud auth configure-docker europe-west6-docker.pkg.dev
 
 # Push the Container to Repository
 docker images
 docker push europe-west6-docker.pkg.dev/[YOUR_PROJECT_ID]/clapp/langchain-chainlit-chat-app:latest
+
+docker push europe-west6-docker.pkg.dev/rare-daylight-418614/clapp/ilo-data-fetch:latest
+
 # Deploy the App using Cloud Run
 gcloud run deploy langchain-cl-chat-with-csv-app --image=europe-west6-docker.pkg.dev/langchain-cl-chat-with-csv/clapp/langchain-chainlit-chat-app:latest \
     --region=europe-west6 \

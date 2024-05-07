@@ -92,10 +92,14 @@ RUN apt-get update && apt-get install -y \
 ENV VIRTUAL_ENV="/app/.venv"
 ENV PATH="$VIRTUAL_ENV/bin:/opt/chromedriver/chromedriver-linux64:/opt/chrome/chrome-linux64:$PATH"
 #ENV PATH="$VIRTUAL_ENV/bin:/opt/chromedriver/chromedriver-linux64:/opt/chrome/chrome-linux64:/root/.local/bin:$PATH"
-
+ENV PORT=8080
+EXPOSE 8080
 
 # Set the working directory
 WORKDIR /app
+
+
+
 
 # Define the command to run the application
 CMD ["python", "fetch.py"]

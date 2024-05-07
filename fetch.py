@@ -126,8 +126,8 @@ theme_files = {
 }
 
 # Iterate through the dictionary items
-for theme, filename in theme_files.items():
-    download_eplex_data(theme, filename)
+#for theme, filename in theme_files.items():
+#    download_eplex_data(theme, filename)
     #upload_to_gcs("ilo_data_storage", file_path, filename)
 
 
@@ -203,6 +203,7 @@ class MetaDataCSVLoader(BaseLoader):
         return docs
 
 
+"""
 # Load data and set embeddings
 loader1 = MetaDataCSVLoader(file_path="Fixed_Term_Contracts_FTCs.csv",metadata_columns=['Region','Country', 'Year'])
 data1 = loader1.load()
@@ -249,7 +250,7 @@ data10 = loader10.load()
 
  
 data = data1 + data2 + data3 + data4 + data5 + data6 + data7 + data8 + data9 + data10
-
+"""
 
 import json
 
@@ -265,7 +266,7 @@ def serialize_documents(documents):
     serialized_docs = [doc.to_json() if isinstance(doc.to_json(), dict) else json.loads(doc.to_json()) for doc in documents]
     return json.dumps(serialized_docs)
 
-data_ser = serialize_documents(data)
+#data_ser = serialize_documents(data)
 
 
 
@@ -292,9 +293,9 @@ from typing import List, Optional, Type, Any
 from langchain_community.vectorstores import FAISS, Chroma
 import os
 from langchain_openai import OpenAIEmbeddings
-embeddings = OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY"))
+#embeddings = OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY"))
 #embeddings = OpenAIEmbeddings()
-vectorstore = Chroma.from_documents(documents=data, embedding=embeddings, persist_directory='chroma')
+#vectorstore = Chroma.from_documents(documents=data, embedding=embeddings, persist_directory='chroma')
 
 
 
@@ -334,7 +335,94 @@ def upload_dir_to_gcs(bucket_name, source_folder, destination_blob_folder):
 bucket_name = "ilo_data_storage"
 local_persistence_dir = 'chroma'  # Your local directory
 gcs_persistence_dir = 'chroma_persistence'  # Path in your GCS bucket
+#upload_dir_to_gcs(bucket_name, local_persistence_dir, gcs_persistence_dir)
+
+
+
+import http.server
+import socketserver
+import threading
+
+def run_http_server():
+    class Handler(http.server.SimpleHTTPRequestHandler):
+        def do_GET(self):
+            if self.path == '/':
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+                self.wfile.write(b"Hello, world!")
+            else:
+                self.send_response(404)
+                self.end_headers()
+
+    with socketserver.TCPServer(("", 8080), Handler) as httpd:
+        print("serving at port", 8080)
+        httpd.serve_forever()
+
+def run_main_process():
+    # Place the main logic of your application here
+    # For example, you can place the loop that downloads and processes the files
+    for theme, filename in theme_files.items():
+        download_eplex_data(theme, filename)
+    
+    # Load data and set embeddings
+loader1 = MetaDataCSVLoader(file_path="Fixed_Term_Contracts_FTCs.csv",metadata_columns=['Region','Country', 'Year'])
+data1 = loader1.load()
+
+# Load data and set embeddings
+loader2 = MetaDataCSVLoader(file_path="Probationary_Trial_Period.csv",metadata_columns=['Region','Country', 'Year'])
+data2 = loader2.load()
+
+# Load data and set embeddings
+loader3 = MetaDataCSVLoader(file_path="Legal_Coverage_General.csv",metadata_columns=['Region','Country', 'Year'])
+data3 = loader3.load()
+
+# Load data and set embeddings
+loader4 = MetaDataCSVLoader(file_path="Legal_Coverage_Reference.csv",metadata_columns=['Region','Country', 'Year'])
+data4 = loader4.load()
+
+# Load data and set embeddings
+loader5 = MetaDataCSVLoader(file_path="Procedures_for_collective_dismissals.csv",metadata_columns=['Region','Country', 'Year'])
+data5 = loader5.load()
+
+# Load data and set embeddings
+loader5 = MetaDataCSVLoader(file_path="Procedures_for_individual_dismissals_general.csv",metadata_columns=['Region','Country', 'Year'])
+data5 = loader5.load()
+
+# Load data and set embeddings
+loader6 = MetaDataCSVLoader(file_path="Procedures_for_individual_dismissals_notice_period.csv",metadata_columns=['Region','Country', 'Year'])
+data6 = loader6.load()
+
+# Load data and set embeddings
+loader7 = MetaDataCSVLoader(file_path="Redress.csv",metadata_columns=['Region','Country', 'Year'])
+data7 = loader7.load()
+
+# Load data and set embeddings
+loader8 = MetaDataCSVLoader(file_path="Redundancy_and_severance_pay.csv",metadata_columns=['Region','Country', 'Year'])
+data8 = loader8.load()
+
+# Load data and set embeddings
+loader9 = MetaDataCSVLoader(file_path="Valid_and_prohibited_grounds_for_dismissal.csv",metadata_columns=['Region','Country', 'Year'])
+data9 = loader9.load()
+
+# Load data and set embeddings
+loader10 = MetaDataCSVLoader(file_path="Workers_enjoying_special_protection_against_dismissal.csv",metadata_columns=['Region','Country', 'Year'])
+data10 = loader10.load()
+
+ 
+data = data1 + data2 + data3 + data4 + data5 + data6 + data7 + data8 + data9 + data10
+
+data_ser = serialize_documents(data)
+
+embeddings = OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY"))
+vectorstore = Chroma.from_documents(documents=data, embedding=embeddings, persist_directory='chroma')
+
 upload_dir_to_gcs(bucket_name, local_persistence_dir, gcs_persistence_dir)
 
 
+# Run the HTTP server in a separate thread
+thread = threading.Thread(target=run_http_server)
+thread.start()
 
+# Run the main process
+run_main_process()
