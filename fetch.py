@@ -11,6 +11,33 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from google.cloud import storage
 from langchain.document_loaders.base import BaseLoader
+import csv
+from typing import Dict, List, Optional
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.document_loaders.csv_loader import CSVLoader
+from langchain.memory import ConversationBufferMemory
+from langchain.prompts import PromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate,  ChatPromptTemplate
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import EmbeddingsFilter
+from langchain.retrievers.self_query.base import SelfQueryRetriever
+from langchain.chains.query_constructor.base import AttributeInfo
+from langchain_community.vectorstores import FAISS, Chroma
+import csv
+from typing import Dict, List, Optional
+from langchain.document_loaders.base import BaseLoader
+from langchain.docstore.document import Document
+import lark
+from langchain.chains.llm import LLMChain
+from google.cloud import storage
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+import json
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 
 def download_eplex_data(theme_value, file_name):
 
@@ -253,7 +280,7 @@ def upload_blob(bucket_name, data_string, destination_blob_name):
 
 
 # Upload the JSON data to GCS
-upload_blob("ilo_data_storage", data_ser, "embeddings.json")
+#upload_blob("ilo_data_storage", data_ser, "embeddings.json")
 
 
 
@@ -267,7 +294,7 @@ import os
 from langchain_openai import OpenAIEmbeddings
 embeddings = OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY"))
 #embeddings = OpenAIEmbeddings()
-vectorstore = Chroma.from_documents(documents=documents, embedding=embeddings, persist_directory='/chroma')
+vectorstore = Chroma.from_documents(documents=data, embedding=embeddings, persist_directory='.')
 
 
 
@@ -290,7 +317,7 @@ def upload_dir_to_gcs(bucket_name, source_folder, destination_blob_folder):
 
 # Use the function to upload the ChromaDB persistence directory to GCS
 bucket_name = "ilo_data_storage"
-local_persistence_dir = '/chroma'  # Your local directory
+local_persistence_dir = 'chroma'  # Your local directory
 gcs_persistence_dir = 'chroma_persistence'  # Path in your GCS bucket
 
 upload_dir_to_gcs(bucket_name, local_persistence_dir, gcs_persistence_dir)
