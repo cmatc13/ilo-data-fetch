@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: my-cronjob
+spec:
+  schedule: "0 3 * * 1"  # Runs at 3 AM UTC every Monday
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: lano-llm-app-container
+            image: gcr.io/rare-daylight-418614/ilo-data-fetch:ilo-data-fetch
+            env:
+              - name: OPENAI_API_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: my-secret
+                    key: OPENAI_API_KEY
+              - name: OAUTH_GOOGLE_CLIENT_ID
+                valueFrom:
+                  secretKeyRef:
+                    name: my-secret
+                    key: OAUTH_GOOGLE_CLIENT_ID
+              - name: OAUTH_GOOGLE_CLIENT_SECRET
+                valueFrom:
+                  secretKeyRef:
+                    name: my-secret
+                    key: OAUTH_GOOGLE_CLIENT_SECRET
+          restartPolicy: OnFailure
+
+
+kubectl logs test-job-xjtvv
