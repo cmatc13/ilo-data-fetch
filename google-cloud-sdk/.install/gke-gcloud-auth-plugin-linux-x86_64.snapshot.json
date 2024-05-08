@@ -1,0 +1,42 @@
+{
+  "components": [
+    {
+      "data": {
+        "contents_checksum": "811125a0907dc84d4603f7c3734cfd214509c7400397e705d234b06d31c6714f",
+        "source": "",
+        "type": "tar"
+      },
+      "dependencies": [
+        "gke-gcloud-auth-plugin"
+      ],
+      "details": {
+        "description": "The auth plugin for Kubectl on GKE.",
+        "display_name": "gke-gcloud-auth-plugin"
+      },
+      "id": "gke-gcloud-auth-plugin-linux-x86_64",
+      "is_configuration": false,
+      "is_hidden": true,
+      "is_required": false,
+      "platform": {
+        "architectures": [
+          "x86_64"
+        ],
+        "operating_systems": [
+          "LINUX"
+        ]
+      },
+      "platform_required": false,
+      "version": {
+        "build_number": 20240106004423,
+        "version_string": "0.5.8"
+      }
+    }
+  ],
+  "revision": 20240412130805,
+  "schema_version": {
+    "no_update": false,
+    "url": "https://dl.google.com/dl/cloudsdk/channels/rapid/google-cloud-sdk.tar.gz",
+    "version": 3
+  },
+  "version": "472.0.0"
+}
