@@ -28,6 +28,3 @@ spec:
                     name: my-secret
                     key: OAUTH_GOOGLE_CLIENT_SECRET
           restartPolicy: OnFailure
-
-
-kubectl logs test-job-xjtvv
