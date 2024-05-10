@@ -34,6 +34,7 @@ import sys
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 import json
 from dotenv import load_dotenv
+import pandas as pd
 
 # Load environment variables from .env file
 load_dotenv()
@@ -110,20 +111,7 @@ def upload_to_gcs(bucket_name, source_file_name, destination_blob_name):
 
     print(f"File {source_file_name} uploaded to {destination_blob_name}.")
 
-# Dictionary of theme values to filenames
-theme_files = {
-    "EMPCONTRACT1": "Fixed_Term_Contracts_FTCs.csv",
-    "EMPCONTRACT2": "Probationary_Trial_Period.csv",
-    "SOURCESCOPE1": "Legal_Coverage_General.csv",
-    "SOURCESCOPE2": "Legal_Coverage_Reference.csv", 
-    "DISMISSREQT1": "Valid_and_prohibited_grounds_for_dismissal.csv", 
-    "DISMISSREQT2": "Workers_enjoying_special_protection_against_dismissal.csv", 
-    "PROCREQTINDIV1": "Procedures_for_individual_dismissals_general.csv", 
-    "PROCREQTINDIV2": "Procedures_for_individual_dismissals_notice_period.csv",
-    "PROCREQTCOLLECT": "Procedures_for_collective_dismissals.csv",
-    "SEVERANCEPAY": "Redundancy_and_severance_pay.csv",
-    "REDRESS": "Redress.csv"
-}
+#
 
 # Iterate through the dictionary items
 #for theme, filename in theme_files.items():
@@ -203,54 +191,6 @@ class MetaDataCSVLoader(BaseLoader):
         return docs
 
 
-"""
-# Load data and set embeddings
-loader1 = MetaDataCSVLoader(file_path="Fixed_Term_Contracts_FTCs.csv",metadata_columns=['Region','Country', 'Year'])
-data1 = loader1.load()
-
-# Load data and set embeddings
-loader2 = MetaDataCSVLoader(file_path="Probationary_Trial_Period.csv",metadata_columns=['Region','Country', 'Year'])
-data2 = loader2.load()
-
-# Load data and set embeddings
-loader3 = MetaDataCSVLoader(file_path="Legal_Coverage_General.csv",metadata_columns=['Region','Country', 'Year'])
-data3 = loader3.load()
-
-# Load data and set embeddings
-loader4 = MetaDataCSVLoader(file_path="Legal_Coverage_Reference.csv",metadata_columns=['Region','Country', 'Year'])
-data4 = loader4.load()
-
-# Load data and set embeddings
-loader5 = MetaDataCSVLoader(file_path="Procedures_for_collective_dismissals.csv",metadata_columns=['Region','Country', 'Year'])
-data5 = loader5.load()
-
-# Load data and set embeddings
-loader5 = MetaDataCSVLoader(file_path="Procedures_for_individual_dismissals_general.csv",metadata_columns=['Region','Country', 'Year'])
-data5 = loader5.load()
-
-# Load data and set embeddings
-loader6 = MetaDataCSVLoader(file_path="Procedures_for_individual_dismissals_notice_period.csv",metadata_columns=['Region','Country', 'Year'])
-data6 = loader6.load()
-
-# Load data and set embeddings
-loader7 = MetaDataCSVLoader(file_path="Redress.csv",metadata_columns=['Region','Country', 'Year'])
-data7 = loader7.load()
-
-# Load data and set embeddings
-loader8 = MetaDataCSVLoader(file_path="Redundancy_and_severance_pay.csv",metadata_columns=['Region','Country', 'Year'])
-data8 = loader8.load()
-
-# Load data and set embeddings
-loader9 = MetaDataCSVLoader(file_path="Valid_and_prohibited_grounds_for_dismissal.csv",metadata_columns=['Region','Country', 'Year'])
-data9 = loader9.load()
-
-# Load data and set embeddings
-loader10 = MetaDataCSVLoader(file_path="Workers_enjoying_special_protection_against_dismissal.csv",metadata_columns=['Region','Country', 'Year'])
-data10 = loader10.load()
-
- 
-data = data1 + data2 + data3 + data4 + data5 + data6 + data7 + data8 + data9 + data10
-"""
 
 import json
 
@@ -331,11 +271,6 @@ def upload_dir_to_gcs(bucket_name, source_folder, destination_blob_folder):
             blob.upload_from_filename(local_path)
             print(f"{local_path} uploaded to {remote_path}.")
 
-# Example usage
-bucket_name = "ilo_data_storage"
-local_persistence_dir = 'chroma'  # Your local directory
-gcs_persistence_dir = 'chroma_persistence'  # Path in your GCS bucket
-#upload_dir_to_gcs(bucket_name, local_persistence_dir, gcs_persistence_dir)
 
 
 
@@ -361,10 +296,125 @@ def run_http_server():
 
 def run_main_process():
     # Place the main logic of your application here
+
+    # Dictionary of theme values to filenames
+    theme_files = {
+        "EMPCONTRACT1": "Fixed_Term_Contracts_FTCs.csv",
+        "EMPCONTRACT2": "Probationary_Trial_Period.csv",
+        "SOURCESCOPE1": "Legal_Coverage_General.csv",
+        "SOURCESCOPE2": "Legal_Coverage_Reference.csv", 
+        "DISMISSREQT1": "Valid_and_prohibited_grounds_for_dismissal.csv", 
+        "DISMISSREQT2": "Workers_enjoying_special_protection_against_dismissal.csv", 
+        "PROCREQTINDIV1": "Procedures_for_individual_dismissals_general.csv", 
+        "PROCREQTINDIV2": "Procedures_for_individual_dismissals_notice_period.csv",
+        "PROCREQTCOLLECT": "Procedures_for_collective_dismissals.csv",
+        "SEVERANCEPAY": "Redundancy_and_severance_pay.csv",
+        "REDRESS": "Redress.csv"
+    }
     # For example, you can place the loop that downloads and processes the files
     for theme, filename in theme_files.items():
         download_eplex_data(theme, filename)
     
+    #Fixed_Term_Contracts_FTCs
+    # Step 1: Read the CSV file
+    file_path = 'Fixed_Term_Contracts_FTCs.csv'  # Replace 'your_file.csv' with the actual file path
+    df = pd.read_csv(file_path)
+
+    # Step 2: Merge columns (assuming you want to merge columns 'A' and 'B' into 'C')
+    # Using the + operator
+    df['Max cumulative duration of successive FTCs'] = df['Maximum cumulative duration of successive FTCs'].astype(str).fillna('') + ' ' + df['Unit'].astype(str).fillna('')
+
+    df['Max cumulative duration of successive FTCs'] = df['Max cumulative duration of successive FTCs'].fillna('')
+
+    # Step 3: Remove columns 'A' and 'B'
+    df.drop(['Maximum cumulative duration of successive FTCs', 'Unit'], axis=1, inplace=True)
+
+    # Step 4: Save the DataFrame as a CSV file with the same name as the original file
+    df.to_csv(file_path, index=False)  # Set index=False to avoid writing row indices to the CSV file
+
+
+    #Probationary_Trial_Period
+
+    # Step 1: Read the CSV file
+    file_path = 'Probationary_Trial_Period.csv'  # Replace 'your_file.csv' with the actual file path
+    df = pd.read_csv(file_path)
+
+    # Step 2: Merge columns (assuming you want to merge columns 'A' and 'B' into 'C')
+    # Using the + operator
+    df['Max probationary (trial) period'] = df['Maximum probationary (trial) period'].astype(str).fillna('') + ' ' + df['Unit'].astype(str).fillna('')
+
+    df['Max probationary (trial) period'] = df['Max probationary (trial) period'].fillna('')
+
+    # Step 3: Remove columns 'A' and 'B'
+    df.drop(['Maximum probationary (trial) period', 'Unit'], axis=1, inplace=True)
+
+    # Step 4: Save the DataFrame as a CSV file with the same name as the original file
+    df.to_csv(file_path, index=False)  # Set index=False to avoid writing row indices to the CSV file
+
+    #Legal_Coverage_Reference
+
+    file_path = 'Legal_Coverage_Reference.csv'
+    # Read the CSV file into a DataFrame
+    df = pd.read_csv(file_path)
+
+    # Convert year to datetime with the first day of January of that year
+    year_dates = pd.to_datetime(df['Reference date'], format='%Y', errors='coerce')
+
+    # Convert yearmonth to datetime with the first day of the respective month
+    year_month_dates = pd.to_datetime(df['Reference date'], format='%Y%m', errors='coerce')
+
+    # Convert yearmonthdate to datetime
+    year_month_date_dates = pd.to_datetime(df['Reference date'], format='%Y%m%d', errors='coerce')
+
+    # Combine the three datetime series
+    combined_dates = year_dates.fillna(year_month_dates).fillna(year_month_date_dates)
+
+    # Update the date_column with the combined dates
+    df['Reference date'] = combined_dates
+
+    # Now the 'date_column' will have the desired format
+
+    df.to_csv(file_path, index=False)  # Set index=False to avoid writing row indices to the CSV file
+
+
+    #Procedures_for_individual_dismissals_notice_period
+
+    # Step 1: Read the CSV file
+    file_path = 'Procedures_for_individual_dismissals_notice_period.csv'  # Replace 'your_file.csv' with the actual file path
+    df = pd.read_csv(file_path)
+
+    # Step 2: Merge columns (assuming you want to merge columns 'A' and 'B' into 'C')
+    # Using the + operator
+    df['Notice_period'] = df['Notice period'].astype(str).fillna('') + ' ' + df['Unit'].astype(str).fillna('')
+
+    df['Notice_period'] = df['Notice_period'].fillna('')
+
+    # Step 3: Remove columns 'A' and 'B'
+    df.drop(['Notice period', 'Unit'], axis=1, inplace=True)
+
+    # Step 4: Save the DataFrame as a CSV file with the same name as the original file
+    df.to_csv(file_path, index=False)  # Set index=False to avoid writing row indices to the CSV file
+
+
+    #Redundancy_and_severance_pay
+
+    # Step 1: Read the CSV file
+    file_path = 'Redundancy_and_severance_pay.csv'  # Replace 'your_file.csv' with the actual file path
+    df = pd.read_csv(file_path)
+
+    # Step 2: Merge columns (assuming you want to merge columns 'A' and 'B' into 'C')
+    # Using the + operator
+    df['Severance pay amount in time'] = df['Number'].astype(str).fillna('') + ' ' + df['Time unit'].astype(str).fillna('')
+
+    df['Severance pay amount in time'] = df['Severance pay amount in time'].fillna('')
+
+    # Step 3: Remove columns 'A' and 'B'
+    df.drop(['Number', 'Time unit'], axis=1, inplace=True)
+
+    # Step 4: Save the DataFrame as a CSV file with the same name as the original file
+    df.to_csv(file_path, index=False)  # Set index=False to avoid writing row indices to the CSV file
+
+
     # Load data and set embeddings
     loader1 = MetaDataCSVLoader(file_path="Fixed_Term_Contracts_FTCs.csv",metadata_columns=['Region','Country', 'Year'])
     data1 = loader1.load()
@@ -416,6 +466,10 @@ def run_main_process():
 
     embeddings = OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY"))
     vectorstore = Chroma.from_documents(documents=data, embedding=embeddings, persist_directory='chroma')
+
+    bucket_name = "ilo_data_storage"
+    local_persistence_dir = 'chroma'  # Your local directory
+    gcs_persistence_dir = 'chroma_persistence'  # Path in your GCS bucket
 
     upload_dir_to_gcs(bucket_name, local_persistence_dir, gcs_persistence_dir)
 
