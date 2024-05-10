@@ -366,58 +366,58 @@ def run_main_process():
         download_eplex_data(theme, filename)
     
     # Load data and set embeddings
-loader1 = MetaDataCSVLoader(file_path="Fixed_Term_Contracts_FTCs.csv",metadata_columns=['Region','Country', 'Year'])
-data1 = loader1.load()
+    loader1 = MetaDataCSVLoader(file_path="Fixed_Term_Contracts_FTCs.csv",metadata_columns=['Region','Country', 'Year'])
+    data1 = loader1.load()
 
-# Load data and set embeddings
-loader2 = MetaDataCSVLoader(file_path="Probationary_Trial_Period.csv",metadata_columns=['Region','Country', 'Year'])
-data2 = loader2.load()
+    # Load data and set embeddings
+    loader2 = MetaDataCSVLoader(file_path="Probationary_Trial_Period.csv",metadata_columns=['Region','Country', 'Year'])
+    data2 = loader2.load()
 
-# Load data and set embeddings
-loader3 = MetaDataCSVLoader(file_path="Legal_Coverage_General.csv",metadata_columns=['Region','Country', 'Year'])
-data3 = loader3.load()
+    # Load data and set embeddings
+    loader3 = MetaDataCSVLoader(file_path="Legal_Coverage_General.csv",metadata_columns=['Region','Country', 'Year'])
+    data3 = loader3.load()
 
-# Load data and set embeddings
-loader4 = MetaDataCSVLoader(file_path="Legal_Coverage_Reference.csv",metadata_columns=['Region','Country', 'Year'])
-data4 = loader4.load()
+    # Load data and set embeddings
+    loader4 = MetaDataCSVLoader(file_path="Legal_Coverage_Reference.csv",metadata_columns=['Region','Country', 'Year'])
+    data4 = loader4.load()
 
-# Load data and set embeddings
-loader5 = MetaDataCSVLoader(file_path="Procedures_for_collective_dismissals.csv",metadata_columns=['Region','Country', 'Year'])
-data5 = loader5.load()
+    # Load data and set embeddings
+    loader5 = MetaDataCSVLoader(file_path="Procedures_for_collective_dismissals.csv",metadata_columns=['Region','Country', 'Year'])
+    data5 = loader5.load()
 
-# Load data and set embeddings
-loader5 = MetaDataCSVLoader(file_path="Procedures_for_individual_dismissals_general.csv",metadata_columns=['Region','Country', 'Year'])
-data5 = loader5.load()
+    # Load data and set embeddings
+    loader5 = MetaDataCSVLoader(file_path="Procedures_for_individual_dismissals_general.csv",metadata_columns=['Region','Country', 'Year'])
+    data5 = loader5.load()
 
-# Load data and set embeddings
-loader6 = MetaDataCSVLoader(file_path="Procedures_for_individual_dismissals_notice_period.csv",metadata_columns=['Region','Country', 'Year'])
-data6 = loader6.load()
+    # Load data and set embeddings
+    loader6 = MetaDataCSVLoader(file_path="Procedures_for_individual_dismissals_notice_period.csv",metadata_columns=['Region','Country', 'Year'])
+    data6 = loader6.load()
 
-# Load data and set embeddings
-loader7 = MetaDataCSVLoader(file_path="Redress.csv",metadata_columns=['Region','Country', 'Year'])
-data7 = loader7.load()
+    # Load data and set embeddings
+    loader7 = MetaDataCSVLoader(file_path="Redress.csv",metadata_columns=['Region','Country', 'Year'])
+    data7 = loader7.load()
 
-# Load data and set embeddings
-loader8 = MetaDataCSVLoader(file_path="Redundancy_and_severance_pay.csv",metadata_columns=['Region','Country', 'Year'])
-data8 = loader8.load()
+    # Load data and set embeddings
+    loader8 = MetaDataCSVLoader(file_path="Redundancy_and_severance_pay.csv",metadata_columns=['Region','Country', 'Year'])
+    data8 = loader8.load()
 
-# Load data and set embeddings
-loader9 = MetaDataCSVLoader(file_path="Valid_and_prohibited_grounds_for_dismissal.csv",metadata_columns=['Region','Country', 'Year'])
-data9 = loader9.load()
+    # Load data and set embeddings
+    loader9 = MetaDataCSVLoader(file_path="Valid_and_prohibited_grounds_for_dismissal.csv",metadata_columns=['Region','Country', 'Year'])
+    data9 = loader9.load()
 
-# Load data and set embeddings
-loader10 = MetaDataCSVLoader(file_path="Workers_enjoying_special_protection_against_dismissal.csv",metadata_columns=['Region','Country', 'Year'])
-data10 = loader10.load()
+    # Load data and set embeddings
+    loader10 = MetaDataCSVLoader(file_path="Workers_enjoying_special_protection_against_dismissal.csv",metadata_columns=['Region','Country', 'Year'])
+    data10 = loader10.load()
 
- 
-data = data1 + data2 + data3 + data4 + data5 + data6 + data7 + data8 + data9 + data10
+    
+    data = data1 + data2 + data3 + data4 + data5 + data6 + data7 + data8 + data9 + data10
 
-data_ser = serialize_documents(data)
+    data_ser = serialize_documents(data)
 
-embeddings = OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY"))
-vectorstore = Chroma.from_documents(documents=data, embedding=embeddings, persist_directory='chroma')
+    embeddings = OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY"))
+    vectorstore = Chroma.from_documents(documents=data, embedding=embeddings, persist_directory='chroma')
 
-upload_dir_to_gcs(bucket_name, local_persistence_dir, gcs_persistence_dir)
+    upload_dir_to_gcs(bucket_name, local_persistence_dir, gcs_persistence_dir)
 
 
 # Run the HTTP server in a separate thread
