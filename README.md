@@ -11,6 +11,7 @@ docker build . -t ilo-data-fetch:latest --no-cache > docker_build.log 2>&1
 # For GCP
 docker build -t gcr.io/[PROJECT-ID]/[IMAGE-NAME]:[TAG] .
 docker build -t gcr.io/rare-daylight-418614/ilo-data-fetch:ilo-data-fetch .
+docker build -t gcr.io/lano-app-project/ilo-data-fetch:ilo-data-fetch .
 
 
 docker system prune -f
@@ -50,6 +51,10 @@ gcloud projects add-iam-policy-binding [YOUR_PROJECT_ID] \
     --member="serviceAccount:lano-ilo-app-service-account@rare-daylight-418614.iam.gserviceaccount.com" \
     --role="roles/run.invoker"    
 
+gcloud projects add-iam-policy-binding llm-app-project \
+    --member="serviceAccount:lano-llm-app@llm-app-project.iam.gserviceaccount.com" \
+    --role="roles/run.invoker"
+
 gcloud projects add-iam-policy-binding [YOUR_PROJECT_ID] \
     --member="serviceAccount:lano-ilo-app-service-account@rare-daylight-418614.iam.gserviceaccount.com" \
     --role="roles/serviceusage.serviceUsageConsumer"
@@ -59,6 +64,14 @@ gcloud projects add-iam-policy-binding [YOUR_PROJECT_ID] \
     --member="serviceAccount:lano-ilo-app-service-account@rare-daylight-418614.iam.gserviceaccount.com" \
     --role="roles/run.admin"
 
+
+gcloud projects add-iam-policy-binding llm-app-project \
+    --member="serviceAccount:lano-llm-app@llm-app-project.iam.gserviceaccount.com" \
+    --role="roles/storage.objectCreator"
+
+gcloud projects add-iam-policy-binding llm-app-project \
+    --member="serviceAccount:lano-llm-app@llm-app-project.iam.gserviceaccount.com" \
+    --role="roles/storage.objectAdmin"    
 
     
 # Check the artifacts location
