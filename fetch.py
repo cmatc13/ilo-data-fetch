@@ -39,7 +39,7 @@ import pandas as pd
 # Load environment variables from .env file
 load_dotenv()
 
-
+"""
 def download_eplex_data(theme_value, file_name):
 
 
@@ -101,10 +101,75 @@ def download_eplex_data(theme_value, file_name):
     finally:
         # Close the webdriver
         driver.quit()
+"""
+
+def download_eplex_data(theme_value, file_name):
+    # Set up download directory
+    download_folder = os.path.join(os.getcwd(), "download")
+    if not os.path.exists(download_folder):
+        os.makedirs(download_folder)
+
+    # Chrome driver setup
+    chrome_options = webdriver.ChromeOptions()
+    prefs = {
+        "download.default_directory": download_folder,
+        "download.prompt_for_download": False,
+        "download.directory_upgrade": True,
+        "safebrowsing.enabled": True
+    }
+    chrome_options.add_experimental_option("prefs", prefs)
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    
+    # Initialize the Chrome driver
+    driver = webdriver.Chrome(options=chrome_options)
+
+    # URL of the website
+    url = "https://eplex.ilo.org/"
+    driver.get(url)
+
+    try:
+        # Click on the 'Download EPLex legal data' button
+        button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/section[3]/div/div/div/div/p[2]/a"))
+        )
+        button.click()
+
+        # Interact with form elements
+        theme_select = WebDriverWait(driver, 4).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div/div/div[2]/form/div[1]/div/select"))
+        )
+        theme_select.click()
+        theme_option = WebDriverWait(driver, 4).until(
+            EC.visibility_of_element_located((By.XPATH, f"//option[@value='{theme_value}']"))
+        )
+        theme_option.click()
+
+        # More form interactions
+        year_select = Select(driver.find_element(By.XPATH, "/html/body/div[1]/div/div/div[2]/form/div[2]/div/select"))
+        year_select.select_by_value("latest")
+        format_select = Select(driver.find_element(By.XPATH, "/html/body/div[1]/div/div/div[2]/form/div[3]/div/select"))
+        format_select.select_by_value("csv")
+
+        # Download the file
+        download_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div/div/div[2]/form/div[4]/button[2]"))
+        )
+        download_button.click()
+
+        # Check for the file download completion
+        file_path = os.path.join(download_folder, file_name)
+        while not os.path.exists(file_path):
+            time.sleep(1)  # Check every second
+
+    finally:
+        driver.quit()
+
 
 def upload_to_gcs(bucket_name, source_file_name, destination_blob_name):
     """Uploads a file to the bucket."""
-    storage_client = storage.Client.from_service_account_json('/app/rare-daylight-418614-e1907d935d97.json')
+    storage_client = storage.Client.from_service_account_json('/app/llm-app-project-26a82e769088.json')
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(destination_blob_name)
     blob.upload_from_filename(source_file_name)
@@ -212,7 +277,7 @@ def serialize_documents(documents):
 
 def upload_blob(bucket_name, data_string, destination_blob_name):
     """Uploads data to the bucket as a file."""
-    storage_client = storage.Client.from_service_account_json('rare-daylight-418614-e1907d935d97.json')
+    storage_client = storage.Client.from_service_account_json('llm-app-project-26a82e769088.json')
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(destination_blob_name)
     
@@ -251,7 +316,7 @@ def upload_dir_to_gcs(bucket_name, source_folder, destination_blob_folder):
         destination_blob_folder (str): Path in the GCS bucket where the directory and files will be uploaded.
     """
     # Initialize Google Cloud Storage client
-    storage_client = storage.Client.from_service_account_json('rare-daylight-418614-e1907d935d97.json')
+    storage_client = storage.Client.from_service_account_json('llm-app-project-26a82e769088.json')
     bucket = storage_client.bucket(bucket_name)
     
     # Walk through the directory tree
@@ -270,6 +335,36 @@ def upload_dir_to_gcs(bucket_name, source_folder, destination_blob_folder):
             blob = bucket.blob(remote_path)
             blob.upload_from_filename(local_path)
             print(f"{local_path} uploaded to {remote_path}.")
+
+
+def upload_folder_to_gcs(bucket_name, source_folder, destination_blob_folder):
+    """Uploads a folder to the specified GCS bucket"""
+    storage_client = storage.Client.from_service_account_json('llm-app-project-26a82e769088.json')
+    bucket = storage_client.bucket(bucket_name)
+
+    for local_file in os.listdir(source_folder):
+        local_file_path = os.path.join(source_folder, local_file)
+        
+        if os.path.isfile(local_file_path):
+            remote_path = os.path.join(destination_blob_folder, local_file)
+            blob = bucket.blob(remote_path)
+            blob.upload_from_filename(local_file_path)
+            print(f"Uploaded {local_file_path} to {remote_path}")
+        elif os.path.isdir(local_file_path):
+            new_folder = os.path.join(destination_blob_folder, local_file)
+            upload_folder_to_gcs(bucket_name, local_file_path, new_folder)
+
+
+import os
+
+def remove_csv_files(directory):
+    # Loop over the list of files in the given directory
+    for filename in os.listdir(directory):
+        if filename.endswith(".csv"):  # Check for CSV files
+            file_path = os.path.join(directory, filename)  # Create full path to the file
+            os.remove(file_path)  # Remove the file
+            print(f"Removed {file_path}")
+
 
 
 
@@ -317,7 +412,7 @@ def run_main_process():
     
     #Fixed_Term_Contracts_FTCs
     # Step 1: Read the CSV file
-    file_path = 'Fixed_Term_Contracts_FTCs.csv'  # Replace 'your_file.csv' with the actual file path
+    file_path = 'download/Fixed_Term_Contracts_FTCs.csv'  # Replace 'your_file.csv' with the actual file path
     df = pd.read_csv(file_path)
 
     # Step 2: Merge columns (assuming you want to merge columns 'A' and 'B' into 'C')
@@ -331,12 +426,12 @@ def run_main_process():
 
     # Step 4: Save the DataFrame as a CSV file with the same name as the original file
     df.to_csv(file_path, index=False)  # Set index=False to avoid writing row indices to the CSV file
-
+    
 
     #Probationary_Trial_Period
 
     # Step 1: Read the CSV file
-    file_path = 'Probationary_Trial_Period.csv'  # Replace 'your_file.csv' with the actual file path
+    file_path = 'download/Probationary_Trial_Period.csv'  # Replace 'your_file.csv' with the actual file path
     df = pd.read_csv(file_path)
 
     # Step 2: Merge columns (assuming you want to merge columns 'A' and 'B' into 'C')
@@ -353,7 +448,7 @@ def run_main_process():
 
     #Legal_Coverage_Reference
 
-    file_path = 'Legal_Coverage_Reference.csv'
+    file_path = 'download/Legal_Coverage_Reference.csv'
     # Read the CSV file into a DataFrame
     df = pd.read_csv(file_path)
 
@@ -380,7 +475,7 @@ def run_main_process():
     #Procedures_for_individual_dismissals_notice_period
 
     # Step 1: Read the CSV file
-    file_path = 'Procedures_for_individual_dismissals_notice_period.csv'  # Replace 'your_file.csv' with the actual file path
+    file_path = 'download/Procedures_for_individual_dismissals_notice_period.csv'  # Replace 'your_file.csv' with the actual file path
     df = pd.read_csv(file_path)
 
     # Step 2: Merge columns (assuming you want to merge columns 'A' and 'B' into 'C')
@@ -399,7 +494,7 @@ def run_main_process():
     #Redundancy_and_severance_pay
 
     # Step 1: Read the CSV file
-    file_path = 'Redundancy_and_severance_pay.csv'  # Replace 'your_file.csv' with the actual file path
+    file_path = 'download/Redundancy_and_severance_pay.csv'  # Replace 'your_file.csv' with the actual file path
     df = pd.read_csv(file_path)
 
     # Step 2: Merge columns (assuming you want to merge columns 'A' and 'B' into 'C')
@@ -414,7 +509,16 @@ def run_main_process():
     # Step 4: Save the DataFrame as a CSV file with the same name as the original file
     df.to_csv(file_path, index=False)  # Set index=False to avoid writing row indices to the CSV file
 
+    bucket_name = 'ilo_storage'
+    source_folder = 'download'
+    destination_blob_folder = 'download'
 
+    upload_folder_to_gcs(bucket_name, source_folder, destination_blob_folder)
+
+    directory_path = 'download'
+    remove_csv_files(directory_path)
+
+"""
     # Load data and set embeddings
     loader1 = MetaDataCSVLoader(file_path="Fixed_Term_Contracts_FTCs.csv",metadata_columns=['Region','Country', 'Year'])
     data1 = loader1.load()
@@ -467,12 +571,12 @@ def run_main_process():
     embeddings = OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY"))
     vectorstore = Chroma.from_documents(documents=data, embedding=embeddings, persist_directory='chroma')
 
-    bucket_name = "ilo_data_storage"
+    bucket_name = "ilo_storage"
     local_persistence_dir = 'chroma'  # Your local directory
     gcs_persistence_dir = 'chroma_persistence'  # Path in your GCS bucket
 
     upload_dir_to_gcs(bucket_name, local_persistence_dir, gcs_persistence_dir)
-
+"""
 
 # Run the HTTP server in a separate thread
 thread = threading.Thread(target=run_http_server)

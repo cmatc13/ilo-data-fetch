@@ -23,9 +23,10 @@ WORKDIR /app
 # Optionally, install requirements.txt if not all packages are managed by Poetry
 COPY requirements.txt ./
 COPY fetch.py ./
-COPY rare-daylight-418614-e1907d935d97.json ./
+COPY llm-app-project-26a82e769088.json ./
 COPY google-cloud-sdk ./
 COPY chroma ./chroma/
+COPY download ./download/
 COPY google-cloud-cli-472.0.0-linux-x86_64-lite.tar.gz ./
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -53,6 +54,7 @@ FROM python:3.11-slim-buster as runtime
 COPY --from=builder /opt /opt
 #COPY --from=builder /root/.local /root/.local
 COPY --from=builder /app /app
+#COPY --from=builder /download /download
 COPY .env /app
 
 RUN ls app
