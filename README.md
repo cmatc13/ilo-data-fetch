@@ -38,6 +38,7 @@ gcloud auth login
 gcloud auth list
 gcloud app create --project=[YOUR_PROJECT_ID]
 gcloud config set project [YOUR_PROJECT_ID]
+gcloud config set project llm-app-project
 Provide billing account for this project by running gcloud beta billing accounts list OR you can do it manually from the GCP console.
 
 Enable Services for the Project: We have to enable services for Cloud Run using below set of commands

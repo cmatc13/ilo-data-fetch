@@ -39,69 +39,6 @@ import pandas as pd
 # Load environment variables from .env file
 load_dotenv()
 
-"""
-def download_eplex_data(theme_value, file_name):
-
-
-    chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument('--disable-dev-shm-usage')
-    
-    driver = webdriver.Chrome(options=chrome_options)
-
-
-    # URL of the website
-    url = "https://eplex.ilo.org/"
-
-    # Open the website
-    driver.get(url)
-
-    try:
-        # Click on the 'Download EPLex legal data' button
-        button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, "/html/body/section[3]/div/div/div/div/p[2]/a"))
-        )
-        button.click()
-
-        # Wait for the theme dropdown to be clickable
-        theme_select = WebDriverWait(driver, 4).until(
-            EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div/div/div[2]/form/div[1]/div/select"))
-        )
-
-        # Click on the theme dropdown to open it
-        theme_select.click()
-
-        # Select the theme
-        theme_option = WebDriverWait(driver, 4).until(
-            EC.visibility_of_element_located((By.XPATH, f"//option[@value='{theme_value}']"))
-        )
-        theme_option.click()
-
-        # Select year
-        year_select = Select(driver.find_element(By.XPATH, "/html/body/div[1]/div/div/div[2]/form/div[2]/div/select"))
-        year_select.select_by_value("latest")  # Change to the desired year
-
-        # Select format
-        format_select = Select(driver.find_element(By.XPATH, "/html/body/div[1]/div/div/div[2]/form/div[3]/div/select"))
-        format_select.select_by_value("csv")  # Change to the desired format
-
-        # Wait for the download button to be clickable
-        download_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div/div/div[2]/form/div[4]/button[2]"))
-        )
-        
-         # Click the download button   
-        download_button.click()
-
-        # Wait for the file to be downloaded
-        while not os.path.exists(file_name):
-            time.sleep(10)  # Wait for 10 seconds
-
-    finally:
-        # Close the webdriver
-        driver.quit()
-"""
 
 def download_eplex_data(theme_value, file_name):
     # Set up download directory
@@ -515,58 +452,57 @@ def run_main_process():
 
     upload_folder_to_gcs(bucket_name, source_folder, destination_blob_folder)
 
-    directory_path = 'download'
-    remove_csv_files(directory_path)
+    directory_path = 'download/'
 
-"""
+
     # Load data and set embeddings
-    loader1 = MetaDataCSVLoader(file_path="Fixed_Term_Contracts_FTCs.csv",metadata_columns=['Region','Country', 'Year'])
+    loader1 = MetaDataCSVLoader(file_path=directory_path + "Fixed_Term_Contracts_FTCs.csv",metadata_columns=['Region','Country', 'Year'])
     data1 = loader1.load()
 
     # Load data and set embeddings
-    loader2 = MetaDataCSVLoader(file_path="Probationary_Trial_Period.csv",metadata_columns=['Region','Country', 'Year'])
+    loader2 = MetaDataCSVLoader(file_path=directory_path + "Probationary_Trial_Period.csv",metadata_columns=['Region','Country', 'Year'])
     data2 = loader2.load()
 
     # Load data and set embeddings
-    loader3 = MetaDataCSVLoader(file_path="Legal_Coverage_General.csv",metadata_columns=['Region','Country', 'Year'])
+    loader3 = MetaDataCSVLoader(file_path=directory_path + "Legal_Coverage_General.csv",metadata_columns=['Region','Country', 'Year'])
     data3 = loader3.load()
 
     # Load data and set embeddings
-    loader4 = MetaDataCSVLoader(file_path="Legal_Coverage_Reference.csv",metadata_columns=['Region','Country', 'Year'])
+    loader4 = MetaDataCSVLoader(file_path=directory_path + "Legal_Coverage_Reference.csv",metadata_columns=['Region','Country', 'Year'])
     data4 = loader4.load()
 
     # Load data and set embeddings
-    loader5 = MetaDataCSVLoader(file_path="Procedures_for_collective_dismissals.csv",metadata_columns=['Region','Country', 'Year'])
+    loader5 = MetaDataCSVLoader(file_path=directory_path + "Procedures_for_collective_dismissals.csv",metadata_columns=['Region','Country', 'Year'])
     data5 = loader5.load()
 
     # Load data and set embeddings
-    loader5 = MetaDataCSVLoader(file_path="Procedures_for_individual_dismissals_general.csv",metadata_columns=['Region','Country', 'Year'])
+    loader5 = MetaDataCSVLoader(file_path=directory_path + "Procedures_for_individual_dismissals_general.csv",metadata_columns=['Region','Country', 'Year'])
     data5 = loader5.load()
 
     # Load data and set embeddings
-    loader6 = MetaDataCSVLoader(file_path="Procedures_for_individual_dismissals_notice_period.csv",metadata_columns=['Region','Country', 'Year'])
+    loader6 = MetaDataCSVLoader(file_path=directory_path + "Procedures_for_individual_dismissals_notice_period.csv",metadata_columns=['Region','Country', 'Year'])
     data6 = loader6.load()
 
     # Load data and set embeddings
-    loader7 = MetaDataCSVLoader(file_path="Redress.csv",metadata_columns=['Region','Country', 'Year'])
+    loader7 = MetaDataCSVLoader(file_path=directory_path + "Redress.csv",metadata_columns=['Region','Country', 'Year'])
     data7 = loader7.load()
 
     # Load data and set embeddings
-    loader8 = MetaDataCSVLoader(file_path="Redundancy_and_severance_pay.csv",metadata_columns=['Region','Country', 'Year'])
+    loader8 = MetaDataCSVLoader(file_path=directory_path + "Redundancy_and_severance_pay.csv",metadata_columns=['Region','Country', 'Year'])
     data8 = loader8.load()
 
     # Load data and set embeddings
-    loader9 = MetaDataCSVLoader(file_path="Valid_and_prohibited_grounds_for_dismissal.csv",metadata_columns=['Region','Country', 'Year'])
+    loader9 = MetaDataCSVLoader(file_path=directory_path + "Valid_and_prohibited_grounds_for_dismissal.csv",metadata_columns=['Region','Country', 'Year'])
     data9 = loader9.load()
 
     # Load data and set embeddings
-    loader10 = MetaDataCSVLoader(file_path="Workers_enjoying_special_protection_against_dismissal.csv",metadata_columns=['Region','Country', 'Year'])
+    loader10 = MetaDataCSVLoader(file_path=directory_path + "Workers_enjoying_special_protection_against_dismissal.csv",metadata_columns=['Region','Country', 'Year'])
     data10 = loader10.load()
 
     
     data = data1 + data2 + data3 + data4 + data5 + data6 + data7 + data8 + data9 + data10
 
-    data_ser = serialize_documents(data)
+    #data_ser = serialize_documents(data)
 
     embeddings = OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY"))
     vectorstore = Chroma.from_documents(documents=data, embedding=embeddings, persist_directory='chroma')
@@ -576,7 +512,7 @@ def run_main_process():
     gcs_persistence_dir = 'chroma_persistence'  # Path in your GCS bucket
 
     upload_dir_to_gcs(bucket_name, local_persistence_dir, gcs_persistence_dir)
-"""
+
 
 # Run the HTTP server in a separate thread
 thread = threading.Thread(target=run_http_server)
