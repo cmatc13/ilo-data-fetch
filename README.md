@@ -37,6 +37,7 @@ docker run -it ilo-data-fetch /bin/bash
 # Main steps to Deploy to GCP 
 - login to gcp with the account connected to the project 
 
+pip install gcloud
 gcloud auth login
 
 gcloud auth list
@@ -146,3 +147,37 @@ git add chroma/78475352-1745-45d8-bd39-2174bd32a103/data_level0.bin
 Now you can commit along with other changes
 If there are issues with commiting you can undo the last commit with 
 git reset HEAD~1
+
+
+gcloud functions deploy iloFetchFunction \
+--runtime python39 \
+--trigger-http \
+--allow-unauthenticated \
+--entry-point main \
+--region YOUR_REGION
+
+
+gcloud functions deploy iloFetchFunction \
+  --runtime python39 \
+  --trigger-http \
+  --allow-unauthenticated \
+  --entry-point main \
+  --region europe-west1 \
+  --source .
+
+
+gcloud scheduler jobs create http my-job \
+--schedule "0 1 * * 1" \
+--uri "https://REGION-PROJECT_ID.cloudfunctions.net/FUNCTION-NAME" \
+--http-method GET
+
+gcloud scheduler jobs create http my-job \
+  --schedule "0 1 * * 1" \
+  --uri "https://europe-west1-llm-app-project.cloudfunctions.net/iloFetchFunction" \
+  --http-method GET \
+  --time-zone "Europe/Paris" \
+  --location europe-west1
+
+# verify the Scheduler job
+gcloud scheduler jobs list --location europe-west1
+
