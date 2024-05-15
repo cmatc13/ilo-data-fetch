@@ -22,7 +22,6 @@ from langchain.retrievers.document_compressors import EmbeddingsFilter
 from langchain.retrievers.self_query.base import SelfQueryRetriever
 from langchain.chains.query_constructor.base import AttributeInfo
 from langchain_community.vectorstores import FAISS, Chroma
-import csv
 from typing import Dict, List, Optional
 from langchain.document_loaders.base import BaseLoader
 from langchain.docstore.document import Document
@@ -30,7 +29,6 @@ import lark
 from langchain.chains.llm import LLMChain
 from google.cloud import storage
 __import__('pysqlite3')
-import sys
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 import json
 from dotenv import load_dotenv
@@ -39,7 +37,7 @@ import pandas as pd
 # Load environment variables from .env file
 load_dotenv()
 
-
+# function to download the eplex csv files 
 def download_eplex_data(theme_value, file_name):
     # Set up download directory
     download_folder = os.path.join(os.getcwd(), "download")
@@ -104,24 +102,6 @@ def download_eplex_data(theme_value, file_name):
         driver.quit()
 
 
-def upload_to_gcs(bucket_name, source_file_name, destination_blob_name):
-    """Uploads a file to the bucket."""
-    storage_client = storage.Client.from_service_account_json('/app/llm-app-project-26a82e769088.json')
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(destination_blob_name)
-    blob.upload_from_filename(source_file_name)
-
-    print(f"File {source_file_name} uploaded to {destination_blob_name}.")
-
-#
-
-# Iterate through the dictionary items
-#for theme, filename in theme_files.items():
-#    download_eplex_data(theme, filename)
-    #upload_to_gcs("ilo_data_storage", file_path, filename)
-
-
-# upload the embeddings to the bucket
 class MetaDataCSVLoader(BaseLoader):
     """Loads a CSV file into a list of documents.
 
@@ -194,40 +174,6 @@ class MetaDataCSVLoader(BaseLoader):
 
 
 
-import json
-
-def serialize_documents(documents):
-    """Serializes a list of langchain_core Document objects to a single JSON string.
-    
-    Args:
-        documents (list): A list of Document instances that have a .to_json() method.
-        
-    Returns:
-        str: A JSON string representing the list of serialized documents.
-    """
-    serialized_docs = [doc.to_json() if isinstance(doc.to_json(), dict) else json.loads(doc.to_json()) for doc in documents]
-    return json.dumps(serialized_docs)
-
-#data_ser = serialize_documents(data)
-
-
-
-def upload_blob(bucket_name, data_string, destination_blob_name):
-    """Uploads data to the bucket as a file."""
-    storage_client = storage.Client.from_service_account_json('llm-app-project-26a82e769088.json')
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(destination_blob_name)
-    
-    # Upload the JSON string
-    blob.upload_from_string(data_string, content_type='application/json')
-
-
-# Upload the JSON data to GCS
-#upload_blob("ilo_data_storage", data_ser, "embeddings.json")
-
-
-
-
 
 import inspect
 import chromadb
@@ -235,15 +181,9 @@ from typing import List, Optional, Type, Any
 from langchain_community.vectorstores import FAISS, Chroma
 import os
 from langchain_openai import OpenAIEmbeddings
-#embeddings = OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY"))
-#embeddings = OpenAIEmbeddings()
-#vectorstore = Chroma.from_documents(documents=data, embedding=embeddings, persist_directory='chroma')
-
-
-
-import os
 from google.cloud import storage
 
+# function to upload the document embeddings to cloud storage
 def upload_dir_to_gcs(bucket_name, source_folder, destination_blob_folder):
     """Uploads a directory to the GCS bucket, including handling for symbolic links to avoid infinite recursion.
     
@@ -274,6 +214,8 @@ def upload_dir_to_gcs(bucket_name, source_folder, destination_blob_folder):
             print(f"{local_path} uploaded to {remote_path}.")
 
 
+
+# function to upload a folder to cloud storage
 def upload_folder_to_gcs(bucket_name, source_folder, destination_blob_folder):
     """Uploads a folder to the specified GCS bucket"""
     storage_client = storage.Client.from_service_account_json('llm-app-project-26a82e769088.json')
@@ -292,8 +234,7 @@ def upload_folder_to_gcs(bucket_name, source_folder, destination_blob_folder):
             upload_folder_to_gcs(bucket_name, local_file_path, new_folder)
 
 
-import os
-
+# remove the csv files from memory after files are uploaded
 def remove_csv_files(directory):
     # Loop over the list of files in the given directory
     for filename in os.listdir(directory):
@@ -302,6 +243,42 @@ def remove_csv_files(directory):
             os.remove(file_path)  # Remove the file
             print(f"Removed {file_path}")
 
+# to clean up the ilo csv files
+def process_csv(file_path, merge_columns, new_column_name, drop_columns):
+    # Step 1: Read the CSV file
+    df = pd.read_csv(file_path)
+    
+    # Step 2: Merge columns (assuming you want to merge columns specified in merge_columns into new_column_name)
+    df[new_column_name] = df[merge_columns[0]].astype(str).fillna('') + ' ' + df[merge_columns[1]].astype(str).fillna('')
+    
+    # Step 3: Remove original columns
+    df.drop(drop_columns, axis=1, inplace=True)
+    
+    # Step 4: Save the DataFrame as a CSV file with the same name as the original file
+    df.to_csv(file_path, index=False)  # Set index=False to avoid writing row indices to the CSV file
+
+# Special case for Legal_Coverage_Reference with date conversion
+def process_date_csv(file_path, date_column):
+    # Read the CSV file into a DataFrame
+    df = pd.read_csv(file_path)
+
+    # Convert year to datetime with the first day of January of that year
+    year_dates = pd.to_datetime(df[date_column], format='%Y', errors='coerce')
+
+    # Convert yearmonth to datetime with the first day of the respective month
+    year_month_dates = pd.to_datetime(df[date_column], format='%Y%m', errors='coerce')
+
+    # Convert yearmonthdate to datetime
+    year_month_date_dates = pd.to_datetime(df[date_column], format='%Y%m%d', errors='coerce')
+
+    # Combine the three datetime series
+    combined_dates = year_dates.fillna(year_month_dates).fillna(year_month_date_dates)
+
+    # Update the date_column with the combined dates
+    df[date_column] = combined_dates
+
+    # Save the DataFrame as a CSV file with the same name as the original file
+    df.to_csv(file_path, index=False)  # Set index=False to avoid writing row indices to the CSV file
 
 
 
@@ -309,7 +286,7 @@ def remove_csv_files(directory):
 import http.server
 import socketserver
 import threading
-
+# function to run the app so that a cronjob can be run for the script
 def run_http_server():
     class Handler(http.server.SimpleHTTPRequestHandler):
         def do_GET(self):
@@ -327,7 +304,6 @@ def run_http_server():
         httpd.serve_forever()
 
 def run_main_process():
-    # Place the main logic of your application here
 
     # Dictionary of theme values to filenames
     theme_files = {
@@ -346,105 +322,30 @@ def run_main_process():
     # For example, you can place the loop that downloads and processes the files
     for theme, filename in theme_files.items():
         download_eplex_data(theme, filename)
-    
-    #Fixed_Term_Contracts_FTCs
-    # Step 1: Read the CSV file
-    file_path = 'download/Fixed_Term_Contracts_FTCs.csv'  # Replace 'your_file.csv' with the actual file path
-    df = pd.read_csv(file_path)
 
-    # Step 2: Merge columns (assuming you want to merge columns 'A' and 'B' into 'C')
-    # Using the + operator
-    df['Max cumulative duration of successive FTCs'] = df['Maximum cumulative duration of successive FTCs'].astype(str).fillna('') + ' ' + df['Unit'].astype(str).fillna('')
+# Process each file using the function
+process_csv('download/Fixed_Term_Contracts_FTCs.csv',
+            merge_columns=['Maximum cumulative duration of successive FTCs', 'Unit'],
+            new_column_name='Max cumulative duration of successive FTCs',
+            drop_columns=['Maximum cumulative duration of successive FTCs', 'Unit'])
 
-    df['Max cumulative duration of successive FTCs'] = df['Max cumulative duration of successive FTCs'].fillna('')
+process_csv('download/Probationary_Trial_Period.csv',
+            merge_columns=['Maximum probationary (trial) period', 'Unit'],
+            new_column_name='Max probationary (trial) period',
+            drop_columns=['Maximum probationary (trial) period', 'Unit'])
 
-    # Step 3: Remove columns 'A' and 'B'
-    df.drop(['Maximum cumulative duration of successive FTCs', 'Unit'], axis=1, inplace=True)
+process_csv('download/Procedures_for_individual_dismissals_notice_period.csv',
+            merge_columns=['Notice period', 'Unit'],
+            new_column_name='Notice_period',
+            drop_columns=['Notice period', 'Unit'])
 
-    # Step 4: Save the DataFrame as a CSV file with the same name as the original file
-    df.to_csv(file_path, index=False)  # Set index=False to avoid writing row indices to the CSV file
-    
+process_csv('download/Redundancy_and_severance_pay.csv',
+            merge_columns=['Number', 'Time unit'],
+            new_column_name='Severance pay amount in time',
+            drop_columns=['Number', 'Time unit'])
 
-    #Probationary_Trial_Period
-
-    # Step 1: Read the CSV file
-    file_path = 'download/Probationary_Trial_Period.csv'  # Replace 'your_file.csv' with the actual file path
-    df = pd.read_csv(file_path)
-
-    # Step 2: Merge columns (assuming you want to merge columns 'A' and 'B' into 'C')
-    # Using the + operator
-    df['Max probationary (trial) period'] = df['Maximum probationary (trial) period'].astype(str).fillna('') + ' ' + df['Unit'].astype(str).fillna('')
-
-    df['Max probationary (trial) period'] = df['Max probationary (trial) period'].fillna('')
-
-    # Step 3: Remove columns 'A' and 'B'
-    df.drop(['Maximum probationary (trial) period', 'Unit'], axis=1, inplace=True)
-
-    # Step 4: Save the DataFrame as a CSV file with the same name as the original file
-    df.to_csv(file_path, index=False)  # Set index=False to avoid writing row indices to the CSV file
-
-    #Legal_Coverage_Reference
-
-    file_path = 'download/Legal_Coverage_Reference.csv'
-    # Read the CSV file into a DataFrame
-    df = pd.read_csv(file_path)
-
-    # Convert year to datetime with the first day of January of that year
-    year_dates = pd.to_datetime(df['Reference date'], format='%Y', errors='coerce')
-
-    # Convert yearmonth to datetime with the first day of the respective month
-    year_month_dates = pd.to_datetime(df['Reference date'], format='%Y%m', errors='coerce')
-
-    # Convert yearmonthdate to datetime
-    year_month_date_dates = pd.to_datetime(df['Reference date'], format='%Y%m%d', errors='coerce')
-
-    # Combine the three datetime series
-    combined_dates = year_dates.fillna(year_month_dates).fillna(year_month_date_dates)
-
-    # Update the date_column with the combined dates
-    df['Reference date'] = combined_dates
-
-    # Now the 'date_column' will have the desired format
-
-    df.to_csv(file_path, index=False)  # Set index=False to avoid writing row indices to the CSV file
-
-
-    #Procedures_for_individual_dismissals_notice_period
-
-    # Step 1: Read the CSV file
-    file_path = 'download/Procedures_for_individual_dismissals_notice_period.csv'  # Replace 'your_file.csv' with the actual file path
-    df = pd.read_csv(file_path)
-
-    # Step 2: Merge columns (assuming you want to merge columns 'A' and 'B' into 'C')
-    # Using the + operator
-    df['Notice_period'] = df['Notice period'].astype(str).fillna('') + ' ' + df['Unit'].astype(str).fillna('')
-
-    df['Notice_period'] = df['Notice_period'].fillna('')
-
-    # Step 3: Remove columns 'A' and 'B'
-    df.drop(['Notice period', 'Unit'], axis=1, inplace=True)
-
-    # Step 4: Save the DataFrame as a CSV file with the same name as the original file
-    df.to_csv(file_path, index=False)  # Set index=False to avoid writing row indices to the CSV file
-
-
-    #Redundancy_and_severance_pay
-
-    # Step 1: Read the CSV file
-    file_path = 'download/Redundancy_and_severance_pay.csv'  # Replace 'your_file.csv' with the actual file path
-    df = pd.read_csv(file_path)
-
-    # Step 2: Merge columns (assuming you want to merge columns 'A' and 'B' into 'C')
-    # Using the + operator
-    df['Severance pay amount in time'] = df['Number'].astype(str).fillna('') + ' ' + df['Time unit'].astype(str).fillna('')
-
-    df['Severance pay amount in time'] = df['Severance pay amount in time'].fillna('')
-
-    # Step 3: Remove columns 'A' and 'B'
-    df.drop(['Number', 'Time unit'], axis=1, inplace=True)
-
-    # Step 4: Save the DataFrame as a CSV file with the same name as the original file
-    df.to_csv(file_path, index=False)  # Set index=False to avoid writing row indices to the CSV file
+# Process the Legal_Coverage_Reference.csv file
+process_date_csv('download/Legal_Coverage_Reference.csv', 'Reference date')
 
     bucket_name = 'ilo_storage'
     source_folder = 'download'
@@ -453,63 +354,29 @@ def run_main_process():
     upload_folder_to_gcs(bucket_name, source_folder, destination_blob_folder)
 
     directory_path = 'download/'
-
-
-    # Load data and set embeddings
-    loader1 = MetaDataCSVLoader(file_path=directory_path + "Fixed_Term_Contracts_FTCs.csv",metadata_columns=['Region','Country', 'Year'])
-    data1 = loader1.load()
-
-    # Load data and set embeddings
-    loader2 = MetaDataCSVLoader(file_path=directory_path + "Probationary_Trial_Period.csv",metadata_columns=['Region','Country', 'Year'])
-    data2 = loader2.load()
-
-    # Load data and set embeddings
-    loader3 = MetaDataCSVLoader(file_path=directory_path + "Legal_Coverage_General.csv",metadata_columns=['Region','Country', 'Year'])
-    data3 = loader3.load()
-
-    # Load data and set embeddings
-    loader4 = MetaDataCSVLoader(file_path=directory_path + "Legal_Coverage_Reference.csv",metadata_columns=['Region','Country', 'Year'])
-    data4 = loader4.load()
-
-    # Load data and set embeddings
-    loader5 = MetaDataCSVLoader(file_path=directory_path + "Procedures_for_collective_dismissals.csv",metadata_columns=['Region','Country', 'Year'])
-    data5 = loader5.load()
-
-    # Load data and set embeddings
-    loader5 = MetaDataCSVLoader(file_path=directory_path + "Procedures_for_individual_dismissals_general.csv",metadata_columns=['Region','Country', 'Year'])
-    data5 = loader5.load()
-
-    # Load data and set embeddings
-    loader6 = MetaDataCSVLoader(file_path=directory_path + "Procedures_for_individual_dismissals_notice_period.csv",metadata_columns=['Region','Country', 'Year'])
-    data6 = loader6.load()
-
-    # Load data and set embeddings
-    loader7 = MetaDataCSVLoader(file_path=directory_path + "Redress.csv",metadata_columns=['Region','Country', 'Year'])
-    data7 = loader7.load()
-
-    # Load data and set embeddings
-    loader8 = MetaDataCSVLoader(file_path=directory_path + "Redundancy_and_severance_pay.csv",metadata_columns=['Region','Country', 'Year'])
-    data8 = loader8.load()
-
-    # Load data and set embeddings
-    loader9 = MetaDataCSVLoader(file_path=directory_path + "Valid_and_prohibited_grounds_for_dismissal.csv",metadata_columns=['Region','Country', 'Year'])
-    data9 = loader9.load()
-
-    # Load data and set embeddings
-    loader10 = MetaDataCSVLoader(file_path=directory_path + "Workers_enjoying_special_protection_against_dismissal.csv",metadata_columns=['Region','Country', 'Year'])
-    data10 = loader10.load()
-
     
+    # Metadata columns
+    metadata_columns = ['Region','Country', 'Year']
+    
+    # Dictionary to store data
+    data_dict = {}
+    
+    # Loop through the theme_files dictionary and load data
+    for theme, file_name in theme_files.items():
+        loader = MetaDataCSVLoader(file_path=directory_path + file_name, metadata_columns=metadata_columns)
+        data_dict[theme] = loader.load()
+    
+    # combine all of the documents into a list
     data = data1 + data2 + data3 + data4 + data5 + data6 + data7 + data8 + data9 + data10
 
-    #data_ser = serialize_documents(data)
-
+    #set the embeddings and save them to the chroma folder
     embeddings = OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY"))
     vectorstore = Chroma.from_documents(documents=data, embedding=embeddings, persist_directory='chroma')
 
+    # save the embeddings from chroma into the chroma_persistence directory in the gcp storage bucket
     bucket_name = "ilo_storage"
-    local_persistence_dir = 'chroma'  # Your local directory
-    gcs_persistence_dir = 'chroma_persistence'  # Path in your GCS bucket
+    local_persistence_dir = 'chroma'  # local directory
+    gcs_persistence_dir = 'chroma_persistence'  # Path in GCS bucket
 
     upload_dir_to_gcs(bucket_name, local_persistence_dir, gcs_persistence_dir)
 
