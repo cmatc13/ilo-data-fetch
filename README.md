@@ -2,6 +2,7 @@
 Fetching data from the International Labor Organization (ILO) on a schedule and storing the data and embeddings in a google cloud bucket. 
 
 - Run these two lines to get the dependencies for GCP. This is a highly stripped down version since naively installing the GCP dependencies from the Google documentation results in bloated and unneccesary files clogging up space. 
+
 curl -LO https://github.com/tonymet/gcloud-lite/releases/download/472.0.0/google-cloud-cli-472.0.0-linux-x86_64-lite.tar.gz
 tar -zxf *gz
 
