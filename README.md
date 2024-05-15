@@ -126,3 +126,23 @@ gcloud run deploy lano-llm-app --image=europe-west10-docker.pkg.dev/[YOUR_PROJEC
     --service-account=[SERVICE_ACCOUNT_EMAIL_ADDRESS] \
     --port=8000 \
     --memory=2G
+
+
+# Committing large files (>100mb) to github
+Will need to use  Git Large File Storage (Git LFS)
+install it in the terminal in visual studio code codespace
+
+sudo apt-get install git-lfs
+git lfs install
+
+e.g. chroma.sqlite3 and data_level0.bin are >100mb
+git lfs track "chroma.sqlite3"
+git lfs track "data_level0.bin"
+
+add the path to the file e.g.
+git add chroma/chroma.sqlite3
+git add chroma/78475352-1745-45d8-bd39-2174bd32a103/data_level0.bin
+
+Now you can commit along with other changes
+If there are issues with commiting you can undo the last commit with 
+git reset HEAD~1

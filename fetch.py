@@ -323,29 +323,29 @@ def run_main_process():
     for theme, filename in theme_files.items():
         download_eplex_data(theme, filename)
 
-# Process each file using the function
-process_csv('download/Fixed_Term_Contracts_FTCs.csv',
-            merge_columns=['Maximum cumulative duration of successive FTCs', 'Unit'],
-            new_column_name='Max cumulative duration of successive FTCs',
-            drop_columns=['Maximum cumulative duration of successive FTCs', 'Unit'])
+    # Process each file using the function
+    process_csv('download/Fixed_Term_Contracts_FTCs.csv',
+                merge_columns=['Maximum cumulative duration of successive FTCs', 'Unit'],
+                new_column_name='Max cumulative duration of successive FTCs',
+                drop_columns=['Maximum cumulative duration of successive FTCs', 'Unit'])
 
-process_csv('download/Probationary_Trial_Period.csv',
-            merge_columns=['Maximum probationary (trial) period', 'Unit'],
-            new_column_name='Max probationary (trial) period',
-            drop_columns=['Maximum probationary (trial) period', 'Unit'])
+    process_csv('download/Probationary_Trial_Period.csv',
+                merge_columns=['Maximum probationary (trial) period', 'Unit'],
+                new_column_name='Max probationary (trial) period',
+                drop_columns=['Maximum probationary (trial) period', 'Unit'])
 
-process_csv('download/Procedures_for_individual_dismissals_notice_period.csv',
-            merge_columns=['Notice period', 'Unit'],
-            new_column_name='Notice_period',
-            drop_columns=['Notice period', 'Unit'])
+    process_csv('download/Procedures_for_individual_dismissals_notice_period.csv',
+                merge_columns=['Notice period', 'Unit'],
+                new_column_name='Notice_period',
+                drop_columns=['Notice period', 'Unit'])
 
-process_csv('download/Redundancy_and_severance_pay.csv',
-            merge_columns=['Number', 'Time unit'],
-            new_column_name='Severance pay amount in time',
-            drop_columns=['Number', 'Time unit'])
+    process_csv('download/Redundancy_and_severance_pay.csv',
+                merge_columns=['Number', 'Time unit'],
+                new_column_name='Severance pay amount in time',
+                drop_columns=['Number', 'Time unit'])
 
-# Process the Legal_Coverage_Reference.csv file
-process_date_csv('download/Legal_Coverage_Reference.csv', 'Reference date')
+    # Process the Legal_Coverage_Reference.csv file
+    process_date_csv('download/Legal_Coverage_Reference.csv', 'Reference date')
 
     bucket_name = 'ilo_storage'
     source_folder = 'download'
@@ -354,24 +354,23 @@ process_date_csv('download/Legal_Coverage_Reference.csv', 'Reference date')
     upload_folder_to_gcs(bucket_name, source_folder, destination_blob_folder)
 
     directory_path = 'download/'
-    
+
     # Metadata columns
     metadata_columns = ['Region','Country', 'Year']
-    
+
     # Dictionary to store data
-    data_dict = {}
-    
+    data_list = []
+
     # Loop through the theme_files dictionary and load data
     for theme, file_name in theme_files.items():
         loader = MetaDataCSVLoader(file_path=directory_path + file_name, metadata_columns=metadata_columns)
-        data_dict[theme] = loader.load()
-    
-    # combine all of the documents into a list
-    data = data1 + data2 + data3 + data4 + data5 + data6 + data7 + data8 + data9 + data10
+        documents = loader.load()  # returns a Document object
+        data_list.extend(documents)
+
 
     #set the embeddings and save them to the chroma folder
     embeddings = OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY"))
-    vectorstore = Chroma.from_documents(documents=data, embedding=embeddings, persist_directory='chroma')
+    vectorstore = Chroma.from_documents(documents=data_list, embedding=embeddings, persist_directory='chroma')
 
     # save the embeddings from chroma into the chroma_persistence directory in the gcp storage bucket
     bucket_name = "ilo_storage"
@@ -379,7 +378,7 @@ process_date_csv('download/Legal_Coverage_Reference.csv', 'Reference date')
     gcs_persistence_dir = 'chroma_persistence'  # Path in GCS bucket
 
     upload_dir_to_gcs(bucket_name, local_persistence_dir, gcs_persistence_dir)
-
+    remove_csv_files("download")
 
 # Run the HTTP server in a separate thread
 thread = threading.Thread(target=run_http_server)
