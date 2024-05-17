@@ -150,14 +150,6 @@ git reset HEAD~1
 
 
 gcloud functions deploy iloFetchFunction \
---runtime python39 \
---trigger-http \
---allow-unauthenticated \
---entry-point main \
---region YOUR_REGION
-
-
-gcloud functions deploy iloFetchFunction \
   --runtime python39 \
   --trigger-http \
   --allow-unauthenticated \
@@ -165,11 +157,6 @@ gcloud functions deploy iloFetchFunction \
   --region europe-west1 \
   --source .
 
-
-gcloud scheduler jobs create http my-job \
---schedule "0 1 * * 1" \
---uri "https://REGION-PROJECT_ID.cloudfunctions.net/FUNCTION-NAME" \
---http-method GET
 
 gcloud scheduler jobs create http my-job \
   --schedule "0 1 * * 1" \
