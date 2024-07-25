@@ -93,7 +93,6 @@ If not already done in the web UI.
 gcloud iam service-accounts create [PROJECT_NAME] --display-name="[PROJECT_NAME]"
 ```
 
-![image](https://github.com/cmatc13/ilo-data-fetch/assets/9800102/30a0b0e3-05ad-45ae-acfd-5b733b4b69aa)
 
 ### Assign Roles to Service Accounts
 ```bash
@@ -106,6 +105,7 @@ gcloud projects add-iam-policy-binding [YOUR_PROJECT_ID] --member="serviceAccoun
 gcloud projects add-iam-policy-binding [YOUR_PROJECT_ID] --member="serviceAccount:[SERVICE_ACCOUNT_EMAIL_ADDRESS]" --role="roles/storage.objectCreator"
 gcloud projects add-iam-policy-binding [YOUR_PROJECT_ID] --member="serviceAccount:[SERVICE_ACCOUNT_EMAIL_ADDRESS]" --role="roles/storage.objectAdmin"
 ```
+![image](https://github.com/cmatc13/ilo-data-fetch/assets/9800102/30a0b0e3-05ad-45ae-acfd-5b733b4b69aa)
 
 ### Check the Artifacts Location
 ```bash
